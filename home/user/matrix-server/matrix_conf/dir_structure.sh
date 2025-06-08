@@ -1,0 +1,1 @@
+mkdir -p ~/matrix-server/{config,nginx,ssl,postgres-data,dendrite-data}

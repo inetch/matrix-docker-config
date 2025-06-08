@@ -1,0 +1,14 @@
+<username>
+/etc/cron.d/certbot-weekly
+
+<pgpassword>
+/home/user/matrix-server/config/dendrite.yaml
+/home/user/matrix-server/docker-compose.yml
+
+<domain.name>
+/home/user/matrix-server/nginx/conf.d/dendrite.conf
+/home/user/matrix-server/config/dendrite.yaml
+/home/user/matrix-server/docker-compose.yml
+
+<email>
+/home/user/matrix-server/docker-compose.yml

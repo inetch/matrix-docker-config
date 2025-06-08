@@ -1,0 +1,1 @@
+docker run --rm --entrypoint="/usr/bin/generate-keys"   -v "$(pwd)/matrix-server/config":/mnt   ghcr.io/element-hq/dendrite-monolith:latest   -private-key /mnt/matrix_key.pem

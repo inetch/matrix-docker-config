@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: matrix_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dendrite
+      POSTGRES_USER: dendrite
+      POSTGRES_PASSWORD: "<pgpassword>"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dendrite"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dendrite:
+    image: ghcr.io/element-hq/dendrite-monolith:latest
+    container_name: matrix_dendrite
+    restart: unless-stopped
+    command: ["/usr/bin/dendrite", "--config", "/etc/dendrite/dendrite.yaml"]
+    volumes:
+      - ./config:/etc/dendrite:ro
+      - ./dendrite-data/media:/var/dendrite/media_store:rw
+      - ./dendrite-data/jetstream:/var/dendrite/jetstream:rw
+      - ./dendrite-data/searchindex:/var/dendrite/searchindex:rw
+      - ./log/dendrite:/var/dendrite/logs:rw
+    networks:
+      - internal
+      - external
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - 8008
+      - 8448
+    environment:
+      - DENDRITE_CONFIG_PATH=/etc/dendrite/dendrite.yaml
+
+  nginx:
+    image: nginx:alpine
+    container_name: matrix_nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./log/nginx:/var/log/nginx
+      - ./../html:/var/www/html
+    networks:
+      - external
+    depends_on:
+      - dendrite
+
+  certbot:
+    image: certbot/certbot
+    container_name: matrix_certbot
+    tty: true # Allocate pseudo-TTY
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./log/certbot:/var/log
+    command: certonly --webroot -w /var/www/certbot --keep-until-expiring --email <email@address> -d <domain.name> -d matrix.<domain.name> --agree-tos
+
+networks:
+  internal:
+    attachable: true
+  external:
+    attachable: true
